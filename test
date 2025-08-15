@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>D.lav｜童貞MBTI 16タイプ診断</title>
+  <style>
+    :root{
+      --bg:#ffffff; --ink:#111111; --muted:#6b7280; --accent:#ff4d8d; --card:#f7f7f7; --line:#e5e7eb;
+    }
+    *{box-sizing:border-box}
+    body{margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI","YuGothic",Meiryo,sans-serif; color:var(--ink); background:var(--bg);}
+    .wrap{max-width:980px;margin:0 auto;padding:28px 20px 64px}
+    .hero{display:flex;gap:20px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+    .logo{font-weight:800;font-size:28px;letter-spacing:0.4px}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:#111;color:#fff;font-size:12px}
+    h1{font-size:28px;margin:12px 0 6px}
+    .lead{color:var(--muted);margin:0 0 8px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}
+    .grid{display:grid;gap:14px}
+    @media(min-width:800px){.grid-2{grid-template-columns:1fr 1fr}}
+    .q{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px}
+    .q h3{margin:0 0 10px;font-size:16px}
+    .opt{display:flex;gap:10px;align-items:flex-start;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:12px;cursor:pointer}
+    .opt:hover{border-color:#cbd5e1}
+    .opt input{margin-top:2px}
+    .progress{position:sticky;top:0;background:rgba(255,255,255,.9);backdrop-filter:saturate(140%) blur(8px);padding:10px 0;z-index:5;border-bottom:1px solid var(--line)}
+    .bar{height:8px;background:var(--line);border-radius:999px;overflow:hidden}
+    .bar>span{display:block;height:100%;background:var(--accent);width:0%}
+    .btn{appearance:none;border:0;border-radius:12px;background:var(--accent);color:#fff;padding:12px 16px;font-weight:700;cursor:pointer}
+    .btn[disabled]{opacity:.5;cursor:not-allowed}
+    .btn-ghost{background:#fff;border:1px solid var(--line);color:var(--ink)}
+    .result{border:2px solid var(--ink);border-radius:18px;padding:20px;background:#fff}
+    .badge{display:inline-block;background:#111;color:#fff;font-size:12px;padding:6px 10px;border-radius:999px;margin-right:8px}
+    .type-name{font-size:22px;font-weight:800;margin:8px 0}
+    .small{font-size:12px;color:var(--muted)}
+    .cta-row{display:flex;gap:10px;flex-wrap:wrap}
+    .foot{margin-top:18px;color:var(--muted);font-size:12px}
+    .hidden{display:none}
+  </style>
+</head>
+<body>
+  <div class="progress">
+    <div class="wrap" style="padding:10px 20px">
+      <div style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+        <div class="logo">D.lav</div>
+        <div class="pill">「わからない」から始めよう</div>
+        <div style="min-width:200px;flex:1 1 220px">
+          <div class="bar"><span id="barFill"></span></div>
+        </div>
+        <div class="small"><span id="countDone">0</span>/<span id="countAll">0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <section class="hero">
+      <div>
+        <h1>童貞MBTI｜16タイプ診断</h1>
+        <p class="lead">12問に答えるだけ。あなたのタイプと、今やるべき一歩がわかります。</p>
+        <div class="cta-row">
+          <button id="btnScroll" class="btn">診断をはじめる</button>
+          <button id="btnResetTop" class="btn btn-ghost">リセット</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="quiz" class="card" style="margin-top:16px">
+      <div class="grid grid-2" id="questionList"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
+        <button id="btnSubmit" class="btn" disabled>結果を見る</button>
+      </div>
+    </section>
+
+    <section id="resultSec" class="result hidden" style="margin-top:18px">
+      <span class="badge" id="typeKey"></span>
+      <h2 class="type-name" id="typeName">タイプ名</h2>
+      <p id="typeDesc" style="margin:6px 0 10px"></p>
+      <div class="card" style="background:#fff">
+        <strong>おすすめプラン</strong>
+        <p id="typePlan" style="margin:6px 0 0"></p>
+      </div>
+      <div class="cta-row" style="margin-top:12px">
+        <button id="btnCopy" class="btn btn-ghost">結果をコピー</button>
+        <a class="btn" href="#" id="btnCTA">無料相談（LINE）へ</a>
+      </div>
+      <div class="foot">※本診断は自己理解のための簡易ツールです。結果は目安としてご利用ください。</div>
+    </section>
+  </div>
+
+  <script>
+    // --- 質問定義（各軸3問×4軸＝12問） ---
+    const QUESTIONS = [
+      // E vs I
+      { id:'q1', axis:'EI', prompt:'初対面の場では？', opts:[
+        {label:'気づくと会話の中心にいる', val:'E'},
+        {label:'まずは場を観察しがち', val:'I'}]},
+      { id:'q2', axis:'EI', prompt:'休日の過ごし方は？', opts:[
+        {label:'人と予定を入れて外に出る', val:'E'},
+        {label:'一人で充電して整える', val:'I'}]},
+      { id:'q3', axis:'EI', prompt:'誘われた飲み会やイベントは？', opts:[
+        {label:'とりあえず行ってみる', val:'E'},
+        {label:'目的が合わなければ行かない', val:'I'}]},
+      // T vs F（理論/感覚）
+      { id:'q4', axis:'TF', prompt:'アプローチ方法を決める基準は？', opts:[
+        {label:'確率や条件などロジック重視', val:'T'},
+        {label:'その場の空気・感情重視', val:'F'}]},
+      { id:'q5', axis:'TF', prompt:'相手が黙ったときの対応は？', opts:[
+        {label:'用意した話題リストから投下', val:'T'},
+        {label:'相手の様子を見て間を保つ', val:'F'}]},
+      { id:'q6', axis:'TF', prompt:'告白や次の約束のタイミングは？', opts:[
+        {label:'最適なタイミングを計算して動く', val:'T'},
+        {label:'気持ちが高まった瞬間に動く', val:'F'}]},
+      // A vs P（行動/空想）
+      { id:'q7', axis:'AP', prompt:'気になる人ができたら？', opts:[
+        {label:'24時間以内に何かしらアクション', val:'A'},
+        {label:'まず妄想・シミュレーションで温める', val:'P'}]},
+      { id:'q8', axis:'AP', prompt:'マッチ後の1通目は？', opts:[
+        {label:'日時・場所など具体提案から入る', val:'A'},
+        {label:'雑談で雰囲気づくりを優先', val:'P'}]},
+      { id:'q9', axis:'AP', prompt:'学び方のスタイルは？', opts:[
+        {label:'実地で試しながら覚える', val:'A'},
+        {label:'情報収集をしっかりしてから動く', val:'P'}]},
+      // X vs S（経験希求/現状維持）
+      { id:'q10', axis:'XS', prompt:'新しい挑戦に対しての姿勢は？', opts:[
+        {label:'多少怖くてもまずやってみる', val:'X'},
+        {label:'今のままでも大きな不満はない', val:'S'}]},
+      { id:'q11', axis:'XS', prompt:'失敗したときは？', opts:[
+        {label:'学びとして次のトライに活かす', val:'X'},
+        {label:'しばらく様子見・休む', val:'S'}]},
+      { id:'q12', axis:'XS', prompt:'関係の進め方は？', opts:[
+        {label:'タイミングを見て進展を試みる', val:'X'},
+        {label:'自然の流れに任せる', val:'S'}]},
+    ];
+
+    const TYPE_MAP = {
+      'E-T-A-X': {name:'突撃童貞', desc:'行動力は抜群。ただし無計画だと玉砕しやすい。相手の反応を読む力を足せば一気に伸びる。', plan:'アドバンス（会話設計・デート導線）'},
+      'E-T-A-S': {name:'ラスト1歩踏み出せない童貞', desc:'社交性はあるのに決め切れない。ゴール前で止まる癖を解消しよう。', plan:'ベーシック（心理的ハードル突破）'},
+      'E-T-P-X': {name:'理論崩壊童貞', desc:'頭で組んだ恋愛方程式が現場で崩れがち。即興対応トレが鍵。', plan:'アドバンス（実践フィードバック）'},
+      'E-T-P-S': {name:'恋愛シミュレーター童貞', desc:'プランは完璧、でも足が出ない。小さな行動から慣らそう。', plan:'ベーシック（出会いチャレンジ）'},
+      'E-F-A-X': {name:'感情ダイバー童貞', desc:'熱量で飛び込む情熱家。温度管理と相手観察で成功率UP。', plan:'アドバンス（会話温度管理）'},
+      'E-F-A-S': {name:'優しすぎて進めない童貞', desc:'配慮は満点、主導権が苦手。リードの練習で一段上へ。', plan:'ベーシック（リード練習）'},
+      'E-F-P-X': {name:'妄想爆発童貞', desc:'ロマンは無限大。現実の一歩と橋渡しを。', plan:'ベーシック＋実践練習'},
+      'E-F-P-S': {name:'受け身童貞', desc:'待ちの姿勢が強め。低リスクの行動課題から。', plan:'ベーシック（出会い場参加）'},
+      'I-T-A-X': {name:'ストイック童貞', desc:'研究熱心で吸収が速い。机上から実戦へ。', plan:'アドバンス（短期集中突破）'},
+      'I-T-A-S': {name:'絶対防衛童貞', desc:'守りが固すぎて機会損失。半歩の挑戦を習慣化。', plan:'ベーシック（失敗の受容）'},
+      'I-T-P-X': {name:'脳内完結童貞', desc:'考えるほど動けなくなる。小さな現場経験で回路をつなぐ。', plan:'ベーシック＋ミニ実践'},
+      'I-T-P-S': {name:'口だけエリート童貞', desc:'理屈は一流、実行は三流。臨機応変の筋トレを。', plan:'アドバンス（即興力UP）'},
+      'I-F-A-X': {name:'誠実一直線童貞', desc:'真面目さは武器。アプローチの幅を増やして的中率UP。', plan:'アドバンス（戦略的アプローチ）'},
+      'I-F-A-S': {name:'奥手紳士童貞', desc:'安心感は抜群。距離感とタイミングの練習で前進。', plan:'ベーシック（距離感調整）'},
+      'I-F-P-X': {name:'夢見る童貞', desc:'理想は高く、現実は控えめ。安全な模擬デートから。', plan:'ベーシック＋模擬デート'},
+      'I-F-P-S': {name:'恋愛スローモーション童貞', desc:'超マイペース。短期ゴール設定で動き出そう。', plan:'ライト（短期挑戦型）'},
+    };
+
+    const qListEl = document.getElementById('questionList');
+    const countAllEl = document.getElementById('countAll');
+    const countDoneEl = document.getElementById('countDone');
+    const barFill = document.getElementById('barFill');
+    const btnSubmit = document.getElementById('btnSubmit');
+
+    // Render questions
+    function render(){
+      countAllEl.textContent = QUESTIONS.length;
+      qListEl.innerHTML = '';
+      QUESTIONS.forEach((q, idx)=>{
+        const section = document.createElement('div');
+        section.className = 'q';
+        section.innerHTML = `
+          <h3>Q${idx+1}. ${q.prompt}</h3>
+          ${q.opts.map((o,i)=>{
+            const id = `${q.id}_${i}`;
+            return `
+              <label class="opt">
+                <input type="radio" name="${q.id}" value="${o.val}" />
+                <span>${o.label}</span>
+              </label>
+            `;
+          }).join('')}
+        `;
+        qListEl.appendChild(section);
+      });
+      updateProgress();
+    }
+
+    function getAnswers(){
+      const answers = {};
+      QUESTIONS.forEach(q=>{
+        const inp = document.querySelector(`input[name="${q.id}"]:checked`);
+        if(inp){ answers[q.id] = { axis:q.axis, val:inp.value }; }
+      });
+      return answers;
+    }
+
+    function updateProgress(){
+      const ans = getAnswers();
+      const done = Object.keys(ans).length;
+      countDoneEl.textContent = done;
+      const pct = Math.round(100 * done / QUESTIONS.length);
+      barFill.style.width = pct + '%';
+      btnSubmit.disabled = done !== QUESTIONS.length;
+    }
+
+    function computeType(){
+      const scores = {E:0,I:0,T:0,F:0,A:0,P:0,X:0,S:0};
+      const ans = getAnswers();
+      Object.values(ans).forEach(a=>{ scores[a.val] = (scores[a.val]||0)+1; });
+      const EI = (scores.E >= scores.I) ? 'E':'I';
+      const TF = (scores.T >= scores.F) ? 'T':'F';
+      const AP = (scores.A >= scores.P) ? 'A':'P';
+      const XS = (scores.X >= scores.S) ? 'X':'S';
+      return `${EI}-${TF}-${AP}-${XS}`;
+    }
+
+    function showResult(){
+      const key = computeType();
+      const data = TYPE_MAP[key] || {name:'タイプ未定義', desc:'回答に偏りが少ないようです。', plan:'ベーシック'};
+      document.getElementById('typeKey').textContent = key;
+      document.getElementById('typeName').textContent = data.name;
+      document.getElementById('typeDesc').textContent = data.desc;
+      document.getElementById('typePlan').textContent = data.plan;
+      document.getElementById('resultSec').classList.remove('hidden');
+      document.getElementById('btnCTA').href = '#'; // LINEのURLに差し替え
+      window.scrollTo({top:document.getElementById('resultSec').offsetTop - 80, behavior:'smooth'});
+    }
+
+    function resetAll(){
+      document.querySelectorAll('input[type=radio]').forEach(el=>el.checked=false);
+      updateProgress();
+      document.getElementById('resultSec').classList.add('hidden');
+      window.scrollTo({top:0, behavior:'smooth'});
+    }
+
+    // Copy result
+    function copyResult(){
+      const key = document.getElementById('typeKey').textContent;
+      const name = document.getElementById('typeName').textContent;
+      const desc = document.getElementById('typeDesc').textContent;
+      const plan = document.getElementById('typePlan').textContent;
+      const text = `【D.lav 童貞MBTI】\nタイプ: ${name}（${key}）\n特徴: ${desc}\nおすすめプラン: ${plan}\n#Dlav #童貞MBTI`;
+      navigator.clipboard.writeText(text).then(()=>{
+        alert('結果をコピーしました。SNSに貼り付けてシェアできます。');
+      });
+    }
+
+    // Events
+    document.addEventListener('change', e=>{
+      if(e.target && e.target.matches('input[type=radio]')) updateProgress();
+    });
+    document.getElementById('btnSubmit').addEventListener('click', showResult);
+    document.getElementById('btnCopy').addEventListener('click', copyResult);
+    document.getElementById('btnResetTop').addEventListener('click', resetAll);
+    document.getElementById('btnScroll').addEventListener('click', ()=>{
+      window.scrollTo({top:document.getElementById('quiz').offsetTop - 60, behavior:'smooth'});
+    });
+
+    render();
+  </script>
+</body>
+</html>
